@@ -14,9 +14,14 @@ export class Game {
         };
         this.gunAngle = 0;
         this.target = this.spawnTarget();
-        this.shotFired = false;
-        this.shotPos = null;
+    this.shotFired = false;
+    this.bullet = null; // {x, y, vx, vy, active}
         this.hit = false;
+        this.targetStartTime = performance.now();
+        this.totalTime = 0;
+        this.targetTimes = [];
+        this.targetsHit = 0;
+        this.gameOver = false;
         this.handleEvents();
     }
 
@@ -25,25 +30,41 @@ export class Game {
     }
 
     update() {
-        // If shot fired, check for hit
-        if (this.shotFired && this.shotPos) {
-            // Line from gun to shot endpoint
-            const sx = this.stickman.x + Math.cos(this.gunAngle) * (this.stickman.armLength + this.stickman.gunLength);
-            const sy = this.stickman.y + Math.sin(this.gunAngle) * (this.stickman.armLength + this.stickman.gunLength);
-            const ex = this.shotPos.x;
-            const ey = this.shotPos.y;
-            // Target center
-            const tx = this.target.x;
-            const ty = this.target.y;
-            // Target radius
-            const r = 25;
-            // Distance from target center to shot line
-            const dist = this.pointToLineDistance(tx, ty, sx, sy, ex, ey);
-            if (dist < r) {
-                this.hit = true;
-                this.target = this.spawnTarget();
+        if (this.gameOver) return;
+        // Animate bullet if active
+        if (this.bullet && this.bullet.active) {
+            this.bullet.x += this.bullet.vx;
+            this.bullet.y += this.bullet.vy;
+            // Check if bullet reached edge
+            if (
+                this.bullet.x <= 0 || this.bullet.x >= this.canvas.width ||
+                this.bullet.y <= 0 || this.bullet.y >= this.canvas.height
+            ) {
+                // Check for hit
+                const sx = this.stickman.x + Math.cos(this.gunAngle) * (this.stickman.armLength + this.stickman.gunLength);
+                const ex = this.bullet.x;
+                const sy = this.stickman.y + Math.sin(this.gunAngle) * (this.stickman.armLength + this.stickman.gunLength);
+                const ey = this.bullet.y;
+                const tx = this.target.x;
+                const ty = this.target.y;
+                const r = 25;
+                const dist = this.pointToLineDistance(tx, ty, sx, sy, ex, ey);
+                if (dist < r) {
+                    this.hit = true;
+                    const now = performance.now();
+                    const targetTime = (now - this.targetStartTime) / 1000;
+                    this.targetTimes.push(targetTime);
+                    this.totalTime += targetTime;
+                    this.targetsHit++;
+                    if (this.targetsHit >= 10) {
+                        this.gameOver = true;
+                    } else {
+                        this.target = this.spawnTarget();
+                        this.targetStartTime = performance.now();
+                    }
+                }
+                this.bullet.active = false;
             }
-            this.shotFired = false;
         }
     }
 
@@ -76,17 +97,38 @@ export class Game {
     render() {
         const ctx = this.ctx;
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        if (this.gameOver) {
+            ctx.save();
+            ctx.font = '48px Arial';
+            ctx.fillStyle = '#222';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`Game Over!`, this.canvas.width / 2, this.canvas.height / 2 - 40);
+            ctx.fillText(`Total Time: ${this.totalTime.toFixed(2)}s`, this.canvas.width / 2, this.canvas.height / 2 + 20);
+            ctx.restore();
+            return;
+        }
         this.drawStickman();
         this.drawTarget();
-        if (this.shotPos) {
-            this.drawShot();
+        if (this.bullet && this.bullet.active) {
+            this.drawBullet();
         }
+        // Draw timer and score
+        ctx.save();
+        ctx.font = '24px Arial';
+        ctx.fillStyle = '#222';
+        ctx.textAlign = 'left';
+        ctx.fillText(`Target: ${this.targetsHit + 1}/10`, 20, 40);
+        const now = performance.now();
+        const currentTime = (now - this.targetStartTime) / 1000;
+        ctx.fillText(`Current Target Time: ${currentTime.toFixed(2)}s`, 20, 70);
+        ctx.fillText(`Total Time: ${this.totalTime.toFixed(2)}s`, 20, 100);
+        ctx.restore();
     }
 
     drawStickman() {
         const ctx = this.ctx;
         const s = this.stickman;
-        // Body
         ctx.save();
         ctx.strokeStyle = '#222';
         ctx.lineWidth = 4;
@@ -114,28 +156,50 @@ export class Game {
         ctx.moveTo(s.x, s.y);
         ctx.lineTo(s.x - s.armLength, s.y - 20);
         ctx.stroke();
-        // Right arm (gun arm)
-        ctx.save();
-        ctx.translate(s.x, s.y);
-        ctx.rotate(this.gunAngle);
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(s.armLength, 0);
-        ctx.stroke();
-        // Gun
-        ctx.strokeStyle = '#444';
-        ctx.lineWidth = 8;
-        ctx.beginPath();
-        ctx.moveTo(s.armLength, 0);
-        ctx.lineTo(s.armLength + s.gunLength, 0);
-        ctx.stroke();
-        ctx.restore();
+    // Right arm (gun arm)
+    ctx.save();
+    ctx.translate(s.x, s.y);
+    ctx.rotate(this.gunAngle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(s.armLength, 0);
+    ctx.stroke();
+    // Pistol gun (barrel and grip)
+    ctx.save();
+    // Raise barrel a bit
+    ctx.translate(s.armLength, -7);
+    // Barrel (rectangle, pointing away from arm)
+    ctx.fillStyle = '#222';
+    ctx.fillRect(0, -3, s.gunLength, 8);
+    // Barrel tip (small rectangle)
+    ctx.fillStyle = '#555';
+    ctx.fillRect(s.gunLength, -1, 6, 4);
+    // Grip (longer, angled down)
+    ctx.save();
+    ctx.rotate(Math.PI / 2.2); // angle grip downward
+    ctx.fillStyle = '#222';
+    ctx.fillRect(-6, 0, 28, 12);
+    ctx.restore();
+    // Trigger guard (arc under barrel)
+    ctx.beginPath();
+    ctx.arc(10, 7, 7, Math.PI * 0.5, Math.PI * 1.5);
+    ctx.strokeStyle = '#222';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // Hand holding gun (circle at top of grip)
+    ctx.save();
+    ctx.rotate(Math.PI / 2.2);
+    ctx.fillStyle = '#f5deb3';
+    ctx.beginPath();
+    ctx.arc(8, 6, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    ctx.restore();
+    ctx.restore();
         // Cowboy hat
         ctx.save();
         ctx.fillStyle = '#a0522d';
-        // Brim
         ctx.fillRect(s.x - s.hatBrim / 2, s.y - 90, s.hatBrim, 8);
-        // Top
         ctx.fillRect(s.x - s.hatWidth / 2, s.y - 110, s.hatWidth, s.hatHeight);
         ctx.restore();
         ctx.restore();
@@ -152,19 +216,25 @@ export class Game {
         this.hit = false;
     }
 
-    drawShot() {
+    drawBullet() {
         const ctx = this.ctx;
         ctx.save();
-        ctx.strokeStyle = '#00f';
-        ctx.lineWidth = 2;
+        // Calculate bullet angle from velocity
+        const angle = Math.atan2(this.bullet.vy, this.bullet.vx);
+        ctx.translate(this.bullet.x, this.bullet.y);
+        ctx.rotate(angle);
+        // Draw bullet body (box)
+        ctx.fillStyle = '#000';
+        ctx.fillRect(-6, -5, 12, 10);
+        // Draw bullet tip (triangle)
         ctx.beginPath();
-        ctx.moveTo(this.stickman.x + Math.cos(this.gunAngle) * (this.stickman.armLength + this.stickman.gunLength),
-                   this.stickman.y + Math.sin(this.gunAngle) * (this.stickman.armLength + this.stickman.gunLength));
-        ctx.lineTo(this.shotPos.x, this.shotPos.y);
-        ctx.stroke();
+        ctx.moveTo(6, -5);
+        ctx.lineTo(14, 0);
+        ctx.lineTo(6, 5);
+        ctx.closePath();
+        ctx.fillStyle = '#000';
+        ctx.fill();
         ctx.restore();
-        // Remove shot after rendering
-        this.shotPos = null;
     }
 
     spawnTarget() {
@@ -207,19 +277,17 @@ export class Game {
             this.gunAngle = Math.atan2(dy, dx);
         });
         this.canvas.addEventListener('mousedown', (e) => {
-            if (e.button === 0) { // Left click
+            if (e.button === 0 && (!this.bullet || !this.bullet.active)) { // Left click
                 // Gun position (end of arm + gun)
                 const sx = this.stickman.x + Math.cos(this.gunAngle) * (this.stickman.armLength + this.stickman.gunLength);
                 const sy = this.stickman.y + Math.sin(this.gunAngle) * (this.stickman.armLength + this.stickman.gunLength);
                 // Shot direction: use gun angle
                 const dirX = Math.cos(this.gunAngle);
                 const dirY = Math.sin(this.gunAngle);
-                // Shot goes to edge of canvas
+                // Find intersection with canvas edge
                 const maxDist = Math.max(this.canvas.width, this.canvas.height) * 2;
                 const tx = sx + dirX * maxDist;
                 const ty = sy + dirY * maxDist;
-                // Find intersection with canvas edge
-                let shotX = tx, shotY = ty;
                 // Calculate intersection with each edge
                 const edges = [
                     { x: 0, y: null }, // left
@@ -253,10 +321,18 @@ export class Game {
                         }
                     }
                 }
-                shotX = hitX;
-                shotY = hitY;
-                this.shotPos = { x: shotX, y: shotY };
-                this.shotFired = true;
+                // Bullet speed (pixels per frame)
+                const speed = 30;
+                const dist = Math.sqrt((hitX - sx) ** 2 + (hitY - sy) ** 2);
+                const vx = ((hitX - sx) / dist) * speed;
+                const vy = ((hitY - sy) / dist) * speed;
+                this.bullet = {
+                    x: sx,
+                    y: sy,
+                    vx,
+                    vy,
+                    active: true
+                };
             }
         });
     }
