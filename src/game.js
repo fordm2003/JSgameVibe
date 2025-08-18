@@ -198,26 +198,63 @@ export class Game {
             const rect = this.canvas.getBoundingClientRect();
             const mx = e.clientX - rect.left;
             const my = e.clientY - rect.top;
+            // Gun position (end of arm)
+            const gunX = this.stickman.x + Math.cos(this.gunAngle) * this.stickman.armLength;
+            const gunY = this.stickman.y + Math.sin(this.gunAngle) * this.stickman.armLength;
+            // Calculate angle from gun position to mouse
             const dx = mx - this.stickman.x;
             const dy = my - this.stickman.y;
             this.gunAngle = Math.atan2(dy, dx);
         });
         this.canvas.addEventListener('mousedown', (e) => {
             if (e.button === 0) { // Left click
-                // Fire gun
+                // Gun position (end of arm + gun)
                 const sx = this.stickman.x + Math.cos(this.gunAngle) * (this.stickman.armLength + this.stickman.gunLength);
                 const sy = this.stickman.y + Math.sin(this.gunAngle) * (this.stickman.armLength + this.stickman.gunLength);
+                // Shot direction: use gun angle
+                const dirX = Math.cos(this.gunAngle);
+                const dirY = Math.sin(this.gunAngle);
                 // Shot goes to edge of canvas
-                const maxDist = Math.max(this.canvas.width, this.canvas.height);
-                const tx = sx + Math.cos(this.gunAngle) * maxDist;
-                const ty = sy + Math.sin(this.gunAngle) * maxDist;
-                // Find intersection with edge
+                const maxDist = Math.max(this.canvas.width, this.canvas.height) * 2;
+                const tx = sx + dirX * maxDist;
+                const ty = sy + dirY * maxDist;
+                // Find intersection with canvas edge
                 let shotX = tx, shotY = ty;
-                // Clamp to canvas
-                if (tx < 0) shotX = 0;
-                if (tx > this.canvas.width) shotX = this.canvas.width;
-                if (ty < 0) shotY = 0;
-                if (ty > this.canvas.height) shotY = this.canvas.height;
+                // Calculate intersection with each edge
+                const edges = [
+                    { x: 0, y: null }, // left
+                    { x: this.canvas.width, y: null }, // right
+                    { x: null, y: 0 }, // top
+                    { x: null, y: this.canvas.height } // bottom
+                ];
+                let minT = Infinity;
+                let hitX = tx, hitY = ty;
+                for (const edge of edges) {
+                    let t;
+                    if (edge.x !== null) {
+                        t = (edge.x - sx) / dirX;
+                        if (t > 0) {
+                            const y = sy + dirY * t;
+                            if (y >= 0 && y <= this.canvas.height && t < minT) {
+                                minT = t;
+                                hitX = edge.x;
+                                hitY = y;
+                            }
+                        }
+                    } else {
+                        t = (edge.y - sy) / dirY;
+                        if (t > 0) {
+                            const x = sx + dirX * t;
+                            if (x >= 0 && x <= this.canvas.width && t < minT) {
+                                minT = t;
+                                hitX = x;
+                                hitY = edge.y;
+                            }
+                        }
+                    }
+                }
+                shotX = hitX;
+                shotY = hitY;
                 this.shotPos = { x: shotX, y: shotY };
                 this.shotFired = true;
             }
