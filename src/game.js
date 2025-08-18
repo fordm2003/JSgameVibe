@@ -22,7 +22,8 @@ export class Game {
         this.targetTimes = [];
         this.targetsHit = 0;
         this.gameOver = false;
-        this.handleEvents();
+    this.shotsTaken = 0;
+    this.handleEvents();
     }
 
     start() {
@@ -30,9 +31,9 @@ export class Game {
     }
 
     update() {
-        if (this.gameOver) return;
+    if (this.gameOver) return;
         // Animate bullet if active
-        if (this.bullet && this.bullet.active) {
+    if (this.bullet && this.bullet.active) {
             this.bullet.x += this.bullet.vx;
             this.bullet.y += this.bullet.vy;
             // Check if bullet reached edge
@@ -103,8 +104,13 @@ export class Game {
             ctx.fillStyle = '#222';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(`Game Over!`, this.canvas.width / 2, this.canvas.height / 2 - 40);
-            ctx.fillText(`Total Time: ${this.totalTime.toFixed(2)}s`, this.canvas.width / 2, this.canvas.height / 2 + 20);
+            ctx.fillText(`Game Over!`, this.canvas.width / 2, this.canvas.height / 2 - 60);
+            ctx.font = '32px Arial';
+            ctx.fillText(`Total Time: ${this.totalTime.toFixed(2)}s`, this.canvas.width / 2, this.canvas.height / 2 - 10);
+            ctx.fillText(`Shots Taken: ${this.shotsTaken}`, this.canvas.width / 2, this.canvas.height / 2 + 30);
+            ctx.fillText(`Penalty: ${(this.shotsTaken).toFixed(2)}s`, this.canvas.width / 2, this.canvas.height / 2 + 70);
+            ctx.font = '36px Arial';
+            ctx.fillText(`Final Score: ${(this.totalTime + this.shotsTaken).toFixed(2)}s`, this.canvas.width / 2, this.canvas.height / 2 + 120);
             ctx.restore();
             return;
         }
@@ -114,16 +120,17 @@ export class Game {
             this.drawBullet();
         }
         // Draw timer and score
-        ctx.save();
-        ctx.font = '24px Arial';
-        ctx.fillStyle = '#222';
-        ctx.textAlign = 'left';
-        ctx.fillText(`Target: ${this.targetsHit + 1}/10`, 20, 40);
-        const now = performance.now();
-        const currentTime = (now - this.targetStartTime) / 1000;
-        ctx.fillText(`Current Target Time: ${currentTime.toFixed(2)}s`, 20, 70);
-        ctx.fillText(`Total Time: ${this.totalTime.toFixed(2)}s`, 20, 100);
-        ctx.restore();
+    ctx.save();
+    ctx.font = '24px Arial';
+    ctx.fillStyle = '#222';
+    ctx.textAlign = 'left';
+    ctx.fillText(`Target: ${this.targetsHit + 1}/10`, 20, 40);
+    ctx.fillText(`Shots: ${this.shotsTaken}`, 20, 70);
+    const now = performance.now();
+    const currentTime = (now - this.targetStartTime) / 1000;
+    ctx.fillText(`Current Target Time: ${currentTime.toFixed(2)}s`, 20, 100);
+    ctx.fillText(`Total Time: ${this.totalTime.toFixed(2)}s`, 20, 130);
+    ctx.restore();
     }
 
     drawStickman() {
@@ -278,6 +285,7 @@ export class Game {
         });
         this.canvas.addEventListener('mousedown', (e) => {
             if (e.button === 0 && (!this.bullet || !this.bullet.active)) { // Left click
+                this.shotsTaken++;
                 // Gun position (end of arm + gun)
                 const sx = this.stickman.x + Math.cos(this.gunAngle) * (this.stickman.armLength + this.stickman.gunLength);
                 const sy = this.stickman.y + Math.sin(this.gunAngle) * (this.stickman.armLength + this.stickman.gunLength);
