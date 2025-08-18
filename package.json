@@ -1,0 +1,21 @@
+{
+  "name": "js-browser-game",
+  "version": "1.0.0",
+  "description": "A simple JavaScript-based web browser game.",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "live-server public",
+    "build": "echo 'Build step can be added here.'"
+  },
+  "keywords": [
+    "javascript",
+    "game",
+    "browser"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "live-server": "^1.2.1"
+  }
+}
