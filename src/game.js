@@ -303,6 +303,7 @@ export class Game {
             this.gunAngle = Math.atan2(dy, dx);
         });
         this.canvas.addEventListener('mousedown', (e) => {
+            if (this.gameOver) return;
             if (e.button === 0 && (!this.bullet || !this.bullet.active)) { // Left click
                 this.shotsTaken++;
                 // Gun position (end of arm + gun)
