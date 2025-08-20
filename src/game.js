@@ -1,6 +1,6 @@
 
 export class Game {
-    constructor(ctx) {
+    constructor(ctx, topScore = null) {
         this.ctx = ctx;
         this.canvas = ctx.canvas;
         this.stickman = {
@@ -25,6 +25,7 @@ export class Game {
         this.targetsHit = 0;
         this.gameOver = false;
     this.shotsTaken = 0;
+    this.topScore = topScore;
     this.handleEvents();
     }
 
@@ -117,6 +118,11 @@ export class Game {
             ctx.fillText(`Penalty: ${(this.shotsTaken).toFixed(2)}s`, this.canvas.width / 2, this.canvas.height / 2 + 70);
             ctx.font = '36px Arial';
             ctx.fillText(`Final Score: ${(this.totalTime + this.shotsTaken).toFixed(2)}s`, this.canvas.width / 2, this.canvas.height / 2 + 120);
+            ctx.font = '28px Arial';
+            ctx.fillStyle = '#0077cc';
+            if (this.topScore !== null) {
+                ctx.fillText(`Top Score: ${this.topScore.toFixed(2)}s`, this.canvas.width / 2, 40);
+            }
             ctx.restore();
             return;
         }
@@ -126,17 +132,24 @@ export class Game {
             this.drawBullet();
         }
         // Draw timer and score
-    ctx.save();
-    ctx.font = '24px Arial';
-    ctx.fillStyle = '#222';
-    ctx.textAlign = 'left';
-    ctx.fillText(`Target: ${this.targetsHit + 1}/10`, 20, 40);
-    ctx.fillText(`Shots: ${this.shotsTaken}`, 20, 70);
-    const now = performance.now();
-    const currentTime = (now - this.targetStartTime) / 1000;
-    ctx.fillText(`Current Target Time: ${currentTime.toFixed(2)}s`, 20, 100);
-    ctx.fillText(`Total Time: ${this.totalTime.toFixed(2)}s`, 20, 130);
-    ctx.restore();
+        ctx.save();
+        ctx.font = '24px Arial';
+        ctx.fillStyle = '#222';
+        ctx.textAlign = 'left';
+        ctx.fillText(`Target: ${this.targetsHit + 1}/10`, 20, 40);
+        ctx.fillText(`Shots: ${this.shotsTaken}`, 20, 70);
+        const now = performance.now();
+        const currentTime = (now - this.targetStartTime) / 1000;
+        ctx.fillText(`Current Target Time: ${currentTime.toFixed(2)}s`, 20, 100);
+        ctx.fillText(`Total Time: ${this.totalTime.toFixed(2)}s`, 20, 130);
+        // Top score at top center
+        ctx.font = '28px Arial';
+        ctx.fillStyle = '#0077cc';
+        ctx.textAlign = 'center';
+        if (this.topScore !== null) {
+            ctx.fillText(`Top Score: ${this.topScore.toFixed(2)}s`, this.canvas.width / 2, 40);
+        }
+        ctx.restore();
     }
 
     drawStickman() {
