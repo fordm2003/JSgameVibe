@@ -162,6 +162,54 @@ export class Game {
         ctx.beginPath();
         ctx.arc(s.x, s.y - 60, 30, 0, Math.PI * 2);
         ctx.stroke();
+        // Eyes
+        const eyeRadius = 8;
+        const pupilRadius = 4;
+        // Eye positions (relative to head center)
+        const eyeOffsetX = 12;
+        const eyeOffsetY = -10;
+        // Calculate pupil direction toward mouse
+        let pupilDX = 0, pupilDY = 0;
+        if (this.lastMouse) {
+            const mx = this.lastMouse.x;
+            const my = this.lastMouse.y;
+            const headX = s.x;
+            const headY = s.y - 60;
+            const dx = mx - headX;
+            const dy = my - headY;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            if (len > 0.01) {
+                pupilDX = (dx / len) * 4;
+                pupilDY = (dy / len) * 4;
+            }
+        }
+        // Left eye
+        ctx.save();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(s.x - eyeOffsetX, s.y - 60 + eyeOffsetY, eyeRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#222';
+        ctx.stroke();
+        // Left pupil
+        ctx.fillStyle = '#222';
+        ctx.beginPath();
+        ctx.arc(s.x - eyeOffsetX + pupilDX, s.y - 60 + eyeOffsetY + pupilDY, pupilRadius, 0, Math.PI * 2);
+        ctx.fill();
+        // Right eye
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(s.x + eyeOffsetX, s.y - 60 + eyeOffsetY, eyeRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#222';
+        ctx.stroke();
+        // Right pupil
+        ctx.fillStyle = '#222';
+        ctx.beginPath();
+        ctx.arc(s.x + eyeOffsetX + pupilDX, s.y - 60 + eyeOffsetY + pupilDY, pupilRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    this.lastMouse = { x: this.stickman.x, y: this.stickman.y - 60 };
         // Body line
         ctx.beginPath();
         ctx.moveTo(s.x, s.y - 30);
@@ -301,6 +349,8 @@ export class Game {
             const dx = mx - this.stickman.x;
             const dy = my - this.stickman.y;
             this.gunAngle = Math.atan2(dy, dx);
+            // Save mouse for eyes
+            this.lastMouse = { x: mx, y: my };
         });
         this.canvas.addEventListener('mousedown', (e) => {
             if (this.gameOver) return;
