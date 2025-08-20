@@ -210,26 +210,54 @@ export class Game {
         ctx.fill();
         ctx.restore();
     this.lastMouse = { x: this.stickman.x, y: this.stickman.y - 60 };
-        // Body line
-        ctx.beginPath();
-        ctx.moveTo(s.x, s.y - 30);
-        ctx.lineTo(s.x, s.y + 60);
-        ctx.stroke();
-        // Left leg
-        ctx.beginPath();
-        ctx.moveTo(s.x, s.y + 60);
-        ctx.lineTo(s.x - 30, s.y + 120);
-        ctx.stroke();
-        // Right leg
-        ctx.beginPath();
-        ctx.moveTo(s.x, s.y + 60);
-        ctx.lineTo(s.x + 30, s.y + 120);
-        ctx.stroke();
-        // Left arm
-        ctx.beginPath();
-        ctx.moveTo(s.x, s.y);
-        ctx.lineTo(s.x - s.armLength, s.y - 20);
-        ctx.stroke();
+    // Shoulders
+    ctx.beginPath();
+    ctx.moveTo(s.x - 40, s.y);
+    ctx.lineTo(s.x + 40, s.y);
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = '#222';
+    ctx.stroke();
+    // Body line
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y - 30);
+    ctx.lineTo(s.x, s.y + 60);
+    ctx.stroke();
+    // Left leg
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y + 60);
+    ctx.lineTo(s.x - 30, s.y + 120);
+    ctx.stroke();
+    // Right leg
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y + 60);
+    ctx.lineTo(s.x + 30, s.y + 120);
+    ctx.stroke();
+    // Left arm (shotgun arm, static for now)
+    ctx.save();
+    ctx.translate(s.x - 40, s.y);
+    ctx.rotate(-Math.PI / 6); // static angle, will animate later
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-s.armLength, 0);
+    ctx.strokeStyle = '#222';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    // Draw shotgun
+    ctx.save();
+    ctx.translate(-s.armLength, 0);
+    // Stock
+    ctx.fillStyle = '#deb887';
+    ctx.fillRect(-18, -7, 18, 14);
+    // Barrels
+    ctx.fillStyle = '#bbb';
+    ctx.fillRect(0, -4, 22, 4);
+    ctx.fillRect(0, 0, 22, 4);
+    // Barrel start (middle of shotgun)
+    ctx.fillStyle = '#888';
+    ctx.fillRect(0, -4, 4, 8);
+    ctx.restore();
+    ctx.restore();
     // Right arm (gun arm)
     ctx.save();
     ctx.translate(s.x, s.y);
@@ -415,7 +443,25 @@ export class Game {
                     this.bangAudio.currentTime = 0;
                     this.bangAudio.play();
                 }
+            } else if (e.button === 2) { // Right click for shotgun
+                this.fireShotgun();
             }
         });
+        // Prevent right-click context menu on canvas
+        this.canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+    }
+
+    fireShotgun() {
+        if (this.gameOver) return;
+        if (!this.shotgunAudio) {
+            this.shotgunAudio = document.getElementById('shotgunSound');
+        }
+        if (this.shotgunAudio) {
+            this.shotgunAudio.currentTime = 0;
+            this.shotgunAudio.play();
+        }
+        // TODO: Implement scatter shot, shell tracking, reload logic
     }
 }
