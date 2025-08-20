@@ -14,7 +14,9 @@ export class Game {
         };
         this.gunAngle = 0;
         this.target = this.spawnTarget();
-    this.shotFired = false;
+    // Get audio elements
+    this.bangAudio = document.getElementById('bangSound');
+    this.tingAudio = document.getElementById('tingSound');
     this.bullet = null; // {x, y, vx, vy, active}
         this.hit = false;
         this.targetStartTime = performance.now();
@@ -52,6 +54,10 @@ export class Game {
                 const dist = this.pointToLineDistance(tx, ty, sx, sy, ex, ey);
                 if (dist < r) {
                     this.hit = true;
+                    if (this.tingAudio) {
+                        this.tingAudio.currentTime = 0;
+                        this.tingAudio.play();
+                    }
                     const now = performance.now();
                     const targetTime = (now - this.targetStartTime) / 1000;
                     this.targetTimes.push(targetTime);
@@ -341,6 +347,10 @@ export class Game {
                     vy,
                     active: true
                 };
+                if (this.bangAudio) {
+                    this.bangAudio.currentTime = 0;
+                    this.bangAudio.play();
+                }
             }
         });
     }
